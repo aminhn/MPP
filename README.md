@@ -10,12 +10,13 @@ REFERENCE
     Hosseininasab, A., van Hoeve, W.J. and Cire, A.A., 2019, July. 
     Constraint-Based Sequential Pattern Mining with Decision Diagrams. 
     In Proceedings of the AAAI Conference on Artificial Intelligence (Vol. 33, pp. 1495-1502).
+    https://www.aaai.org/ojs/index.php/AAAI/article/view/3962
 
 CONTACT
     aminh@andrew.cmu.edu
 
 INSTALLATION
-    Design fo Linux systems. Installation from Makefile. Simply use make. Output is MPP executable.
+    Designed for Linux systems. Installation from Makefile. Simply use make. Output is MPP executable.
 
 DOWNLOAD
     MPP can be downloaded from https://github.com/aminhn/MPP
