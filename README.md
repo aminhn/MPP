@@ -48,9 +48,7 @@ COMMAND LINE COMMANDS
 INPUT FILE 
     Input databse consists of rows of sequences, where each sequence is an ordered set of events denoted by numericals or literals. 	
     The database may be associated to a number of attribute files, where each file constains the same number of rows as the input 	     database, and each row contains the same number of events per sequence of the input database. Attrbute values must be numericals.
-
-    *** The first attribute file (generally considered to be time dimension) is assumed to satisfy a monotonic property on its values, 		i.e., each row is a sequence of non-decreasing numerical values.
-    *** The remainder of attribute files are not required to be monotonic
+    The first attribute file (generally considered to be time dimension) is assumed to satisfy a monotonic property on its values, i.e.,     each row is a sequence of non-decreasing numerical values. The remainder of attribute files are not required to be monotonic
 
 OUTPUT FILE
     Ouput file, if -write command is used, gives rows of patterns with associated frequency. Frequency of a pattern is the number of sequences 
