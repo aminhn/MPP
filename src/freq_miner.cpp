@@ -1,10 +1,15 @@
 /*
 ---------------------------------------------------------------------------------------------------------------------------------- 
-Copyright 2019 Amin Hosseininasab
-This file is part of MPP mining algorithm.
-MPP is a free software, and a GNU General Public License is pending.
+Constraint-based Sequential Pattern Mining with Decision Diagrams
+Copyright (C) 2020 Carnegie Mellon University
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
+warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 ----------------------------------------------------------------------------------------------------------------------------------
 */
+
+//Freq_miner() function: mines all frequent patterns in the MDD database 
 
 
 #include "freq_miner.hpp"
@@ -12,10 +17,10 @@ MPP is a free software, and a GNU General Public License is pending.
 #include <time.h>
 #include "utility.hpp"
 
-void Extend_patt(Pattern*);										
-void Find_items(int ID, Pattern* _patt, vector<Pattern*>* pot_patt, vector<int>* item_count);		
-void Out_final_patt(vector<int>* seq, int freq);							
-int Check_cons(int ID, int par_pos, Node* tnod, Pattern* _patt);					
+void Extend_patt(Pattern*);										//Extends a pattern by one event
+void Find_items(int ID, Pattern* _patt, vector<Pattern*>* pot_patt, vector<int>* item_count);		//Finds number patterns of the form <_patt,event> in the database, for all event types
+void Out_final_patt(vector<int>* seq, int freq);							//Writes found pattern to terminal or file
+int Check_cons(int ID, int par_pos, Node* tnod, Pattern* _patt);					//Checks satisfcation of constraints during mining algorithm
 
 vector<bool> indic_vec;
 
@@ -36,7 +41,7 @@ void Freq_miner() {
 		file.close();
 	}
 
-	while (!DFS_queue.empty()) {								
+	while (!DFS_queue.empty()) {								//takes pattern out from last input to DFS queue and searches for its extension by possible events
 		if (DFS_queue.back() != NULL && DFS_queue.back()->freq >= theta)
 			Extend_patt(DFS_queue.back());
 		else {
@@ -48,26 +53,26 @@ void Freq_miner() {
 }
 
 
-void Extend_patt(Pattern* _patt) {							
+void Extend_patt(Pattern* _patt) {								//Extends _patt by any possible event types
 
 	num_patt++;
 	DFS_queue.pop_back();
 
 	indic_vec = vector<bool>(L, 1);
 	vector<int> item_count(L, 0);
-	iter = 0;										
+	iter = 0;										//position at which the str_pnt vector of ID under consideration is stored at parent node 
 
 	vector<Pattern*> pot_patt(L, NULL);
 
 	for (int i = 0; i < _patt->str_pnt.size(); i++) {
-		Find_items(_patt->seq_ID[i] - 1, _patt, &pot_patt, &item_count);		
+		Find_items(_patt->seq_ID[i] - 1, _patt, &pot_patt, &item_count);		//finds number of patterns per L (number of event types) possible extensions of _patt
 		iter++;
 
 	}
 
 
 	int all = 0;
-	for (int i = 0; i < L; i++) {								
+	for (int i = 0; i < L; i++) {								//For every possible extension checks frequency threshold, if satisfied adds new patter to DFS queue
 		if (item_count[i] >= theta) {
 			pot_patt[i]->patt_seq = _patt->patt_seq;
 			pot_patt[i]->patt_seq.push_back(i + 1);
@@ -81,7 +86,7 @@ void Extend_patt(Pattern* _patt) {
 			pot_patt[i]->~Pattern();
 	}
 
-	if (_patt->patt_seq.size() > 1 && _patt->act_freq >= theta) {				
+	if (_patt->patt_seq.size() > 1 && _patt->act_freq >= theta) {				//A maximal pattern (cannot be extended further by any event)
 		num_max_patt++;
 		if (b_disp || b_write)
 			Out_final_patt(&_patt->patt_seq, _patt->act_freq);
@@ -92,18 +97,18 @@ void Extend_patt(Pattern* _patt) {
 }
 
 
-void Find_items(int ID, Pattern* _patt, vector<Pattern*>* pot_patt, vector<int>* item_count) {			
+void Find_items(int ID, Pattern* _patt, vector<Pattern*>* pot_patt, vector<int>* item_count) {			//Find extensions by searching children of MDD nodes
 
 	int par_pos = _patt->str_pnt[iter]->size();	//position of parent in str_pnt[iter] vector (back_tracking on parent vector due to bottom-up MDD construction)
 
 	for (vector<Node*>::reverse_iterator it1 = _patt->str_pnt[iter]->rbegin(); it1 != _patt->str_pnt[iter]->rend(); it1++) {
 
 		par_pos--;
-		int ID_pos = find_ID(ID + 1, &(*it1)->seq_ID);							
+		int ID_pos = find_ID(ID + 1, &(*it1)->seq_ID);							//position of ID in parent vector (used to get position of relevent children, time, skip, etc., vectors)
 		if (ID_pos == -1)
 			continue;
 
-		int chil_pos = (*it1)->children[ID_pos]->size()-1;					
+		int chil_pos = (*it1)->children[ID_pos]->size()-1;						//position of child in children vector 
 		for (vector<Node*>::reverse_iterator it2 = (*it1)->children[ID_pos]->rbegin(); it2 != (*it1)->children[ID_pos]->rend(); it2++) {
 
 
@@ -111,7 +116,7 @@ void Find_items(int ID, Pattern* _patt, vector<Pattern*>* pot_patt, vector<int>*
 				continue;
 
 			int cond = 1;
-			if (!tot_spn.empty() || !tot_avr.empty() || !lmedi.empty() || !umedi.empty()) {		
+			if (!tot_spn.empty() || !tot_avr.empty() || !lmedi.empty() || !umedi.empty()) {		//constraint check
 				cond = Check_cons(ID, par_pos, *it2, _patt);
 				if (cond == -1)
 					break;
@@ -119,7 +124,7 @@ void Find_items(int ID, Pattern* _patt, vector<Pattern*>* pot_patt, vector<int>*
 					continue;
 			}
 
-			if (iter - (*item_count)[(*it2)->item - 1] > _patt->freq - theta) {			
+			if (iter - (*item_count)[(*it2)->item - 1] > _patt->freq - theta) {			//rest of code corresponds to information generation and storing for constraint satisfaction
 				indic_vec[(*it2)->item - 1] = 0;
 				continue;
 			}
@@ -169,7 +174,7 @@ void Find_items(int ID, Pattern* _patt, vector<Pattern*>* pot_patt, vector<int>*
 				if ((*it2)->attr[chil_ID_pos]->at(lmedi[i])->at(0) < lmed[i]){
 					(*pot_patt)[(*it2)->item - 1]->lmed.back()->at(i)->back()->at(0) = _patt->lmed[iter]->at(i)->at(par_pos)->at(0) - 1;
 					(*pot_patt)[(*it2)->item - 1]->lmed.back()->at(i)->back()->at(2) = _patt->lmed[iter]->at(i)->at(par_pos)->at(2);
-					if (_patt->lmed[iter]->at(i)->at(par_pos)->at(1) > (*it2)->attr[chil_ID_pos]->at(lmedi[i])->at(0)) 				
+					if (_patt->lmed[iter]->at(i)->at(par_pos)->at(1) > (*it2)->attr[chil_ID_pos]->at(lmedi[i])->at(0)) 				//max of mins
 						(*pot_patt)[(*it2)->item - 1]->lmed.back()->at(i)->back()->at(1) = _patt->lmed[iter]->at(i)->at(par_pos)->at(1);
 					else
 						(*pot_patt)[(*it2)->item - 1]->lmed.back()->at(i)->back()->at(1) = (*it2)->attr[chil_ID_pos]->at(lmedi[i])->at(0);
@@ -177,7 +182,7 @@ void Find_items(int ID, Pattern* _patt, vector<Pattern*>* pot_patt, vector<int>*
 				else {
 					(*pot_patt)[(*it2)->item - 1]->lmed.back()->at(i)->back()->at(0) = _patt->lmed[iter]->at(i)->at(par_pos)->at(0) + 1;
 					(*pot_patt)[(*it2)->item - 1]->lmed.back()->at(i)->back()->at(1) = _patt->lmed[iter]->at(i)->at(par_pos)->at(1);
-					if (_patt->lmed[iter]->at(i)->at(par_pos)->at(2) < (*it2)->attr[chil_ID_pos]->at(lmedi[i])->at(0)) 				
+					if (_patt->lmed[iter]->at(i)->at(par_pos)->at(2) < (*it2)->attr[chil_ID_pos]->at(lmedi[i])->at(0)) 				//min of maxs
 						(*pot_patt)[(*it2)->item - 1]->lmed.back()->at(i)->back()->at(2) = _patt->lmed[iter]->at(i)->at(par_pos)->at(2);
 					else
 						(*pot_patt)[(*it2)->item - 1]->lmed.back()->at(i)->back()->at(2) = (*it2)->attr[chil_ID_pos]->at(lmedi[i])->at(0);
@@ -190,7 +195,7 @@ void Find_items(int ID, Pattern* _patt, vector<Pattern*>* pot_patt, vector<int>*
 				if ((*it2)->attr[chil_ID_pos]->at(umedi[i])->at(0) <= umed[i]){
 					(*pot_patt)[(*it2)->item - 1]->umed.back()->at(i)->back()->at(0) = _patt->umed[iter]->at(i)->at(par_pos)->at(0) + 1;
 					(*pot_patt)[(*it2)->item - 1]->umed.back()->at(i)->back()->at(2) = _patt->umed[iter]->at(i)->at(par_pos)->at(2);
-					if (_patt->umed[iter]->at(i)->at(par_pos)->at(1) > (*it2)->attr[chil_ID_pos]->at(umedi[i])->at(0))				
+					if (_patt->umed[iter]->at(i)->at(par_pos)->at(1) > (*it2)->attr[chil_ID_pos]->at(umedi[i])->at(0))				//max of mins
 						(*pot_patt)[(*it2)->item - 1]->umed.back()->at(i)->back()->at(1) = _patt->umed[iter]->at(i)->at(par_pos)->at(1);
 					else
 						(*pot_patt)[(*it2)->item - 1]->umed.back()->at(i)->back()->at(1) = (*it2)->attr[chil_ID_pos]->at(umedi[i])->at(0);
@@ -198,7 +203,7 @@ void Find_items(int ID, Pattern* _patt, vector<Pattern*>* pot_patt, vector<int>*
 				else {
 					(*pot_patt)[(*it2)->item - 1]->umed.back()->at(i)->back()->at(0) = _patt->umed[iter]->at(i)->at(par_pos)->at(0) - 1;
 					(*pot_patt)[(*it2)->item - 1]->umed.back()->at(i)->back()->at(1) = _patt->umed[iter]->at(i)->at(par_pos)->at(1);
-					if (_patt->umed[iter]->at(i)->at(par_pos)->at(2) < (*it2)->attr[chil_ID_pos]->at(umedi[i])->at(0))				
+					if (_patt->umed[iter]->at(i)->at(par_pos)->at(2) < (*it2)->attr[chil_ID_pos]->at(umedi[i])->at(0))				//min of maxs
 						(*pot_patt)[(*it2)->item - 1]->umed.back()->at(i)->back()->at(2) = _patt->umed[iter]->at(i)->at(par_pos)->at(2);
 					else
 						(*pot_patt)[(*it2)->item - 1]->umed.back()->at(i)->back()->at(2) = (*it2)->attr[chil_ID_pos]->at(umedi[i])->at(0);
@@ -212,13 +217,13 @@ void Find_items(int ID, Pattern* _patt, vector<Pattern*>* pot_patt, vector<int>*
 }
 
 
-int Check_cons(int ID, int par_pos, Node* tnod, Pattern* _patt) {						
+int Check_cons(int ID, int par_pos, Node* tnod, Pattern* _patt) {							//constriant satisfaction
 
-	chil_ID_pos = find_ID(ID + 1, &tnod->seq_ID);   								
+	chil_ID_pos = find_ID(ID + 1, &tnod->seq_ID);   								//position of ID in child vector
 	int satis = 1;
 
-	int att_pos = 0;												
-	for (vector<int>::iterator it = uspni.begin(); it != uspni.end(); it++){					
+	int att_pos = 0;												//position of attribute in constraint vector
+	for (vector<int>::iterator it = uspni.begin(); it != uspni.end(); it++){					//upper bound span, antimonotone, pattern cannot be extended to any feasible one for this node or any other node (child)
 		if (*it == 0 && tnod->attr[chil_ID_pos]->at(*it)->at(0) - _patt->spn[iter]->at(att_pos)->at(par_pos)->at(0) > uspn[att_pos])
 			return -1;
 		else if(*it != 0){
@@ -236,7 +241,7 @@ int Check_cons(int ID, int par_pos, Node* tnod, Pattern* _patt) {
 	}
 
 	att_pos = 0;
-	for (vector<int>::iterator it = lspni.begin(); it != lspni.end(); it++){					
+	for (vector<int>::iterator it = lspni.begin(); it != lspni.end(); it++){					//lower bound span, if condition holds, current node cannot be extended to feasible one but later nodes may
 		if (*it == 0 && tnod->attr[chil_ID_pos]->at(*it)->at(0) - _patt->spn[iter]->at(att_pos)->at(par_pos)->at(0) < lspn[att_pos]){
 			if (tnod->attr[chil_ID_pos]->at(*it)->at(2) - _patt->spn[iter]->at(att_pos)->at(par_pos)->at(0) < lspn[att_pos])
 				return 0;
@@ -458,7 +463,7 @@ int Check_cons(int ID, int par_pos, Node* tnod, Pattern* _patt) {
 }
 
 
-void Out_final_patt(vector<int>* seq, int freq) {								
+void Out_final_patt(vector<int>* seq, int freq) {								//Writes patterns to terminal or file
 
 	ofstream file;
 

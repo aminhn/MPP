@@ -1,10 +1,15 @@
 /*
 ---------------------------------------------------------------------------------------------------------------------------------- 
-Copyright 2019 Amin Hosseininasab
-This file is part of MPP mining algorithm.
-MPP is a free software, and a GNU General Public License is pending.
+Constraint-based Sequential Pattern Mining with Decision Diagrams
+Copyright (C) 2020 Carnegie Mellon University
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
+warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 ----------------------------------------------------------------------------------------------------------------------------------
 */
+
+//Load_inst() function: loads input database and attribute values into memory
 
 
 #include<iostream>
@@ -15,16 +20,16 @@ MPP is a free software, and a GNU General Public License is pending.
 
 using namespace std;
 
-int M = 0, N = 0, L = 0, theta;									
+int M = 0, N = 0, L = 0, theta;									//M:size of largest sequences, N:number of sequences in input database, L:number of event types, theta:frequency threshold
 	
-vector<vector<int>*> items;									
-vector<vector<vector<int>*>*> attrs;								
-vector<int> max_attrs, min_attrs;												
-map<string,int> item_map;									
-map<int,string> item_map_rev;									
+vector<vector<int>*> items;									//input database in table format (rows of sequences, each sequence a set of events)
+vector<vector<vector<double>*>*> attrs;								//vector of attribute values in table format (one table per attribute, each table rows of sequence attributes)
+vector<int> max_attrs, min_attrs;								//minimum and maximum value of an attribute						
+map<string,int> item_map;									//used when dic=1, build a dictionary of input (original) event names to consecutive numericals
+map<int,string> item_map_rev;									//reverse map of numericals to original event names
 
-bool Load_att(string &inst);									
-bool Load_items(string &inst);									
+bool Load_att(string &inst);									//load attribute function
+bool Load_items(string &inst);									//load input database function
 
 bool Load_instance(string &items_file, vector<string>* attrs_files, double thresh) {
 	
@@ -41,7 +46,7 @@ bool Load_instance(string &items_file, vector<string>* attrs_files, double thres
 		cout << "Attribute " << attrs_files->at(i) << " loaded\n";
 	}
 
-	theta = thresh * N;									
+	theta = thresh * N;									//if a pattern occurs in more than theta number of sequences (thresh precentage of total sequences) it is frequent			
 	
 	return 1;
 }
@@ -99,11 +104,11 @@ bool Load_att(string &inst) {
 	max_attrs.push_back(0);
 	min_attrs.push_back(10^6);
 
-	if (inst=="Position"){							
+	if (inst=="Position"){							//If no time attribute is defined and only position of events is required use Position as name of attribute. (stores position of each event as attribute value)
 		cout<< "Using position as time attribute\n";
-		attrs.push_back(new vector<vector<int>*>);
+		attrs.push_back(new vector<vector<double>*>);
 		for (int i=0; i<N; i++){
-			attrs.back()->push_back(new vector<int>);
+			attrs.back()->push_back(new vector<double>);
 			for (int j=0; j<items[i]->size(); j++){
 				attrs.back()->back()->push_back(j+1);
 			}
@@ -115,13 +120,13 @@ bool Load_att(string &inst) {
 	if (file.good())
 	{
 		string line;
-		int ditem;
+		double ditem;
 		int size_m;
-		attrs.push_back(new vector<vector<int>*>);
+		attrs.push_back(new vector<vector<double>*>);
 		while (getline(file, line))
 		{
 			istringstream word(line);
-			attrs.back()->push_back(new vector<int>);
+			attrs.back()->push_back(new vector<double>);
 			string itm;
 			while (word >> itm) {
 				ditem = stod(itm);

@@ -1,24 +1,29 @@
 /*
 ---------------------------------------------------------------------------------------------------------------------------------- 
-Copyright 2019 Amin Hosseininasab
-This file is part of MPP mining algorithm.
-MPP is a free software, and a GNU General Public License is pending.
+Constraint-based Sequential Pattern Mining with Decision Diagrams
+Copyright (C) 2020 Carnegie Mellon University
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
+warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 ----------------------------------------------------------------------------------------------------------------------------------
 */
+
+//Build_MDD() function: build MDD database model of input tabular database
 
 #include<vector>
 #include <iostream>
 #include "load_inst.hpp"
 #include "build_mdd.hpp"
 
-void Popl_nodes();							
-void Intlz_DFS(int ID, Node* fnod, Node* tnod);				
-void Add_arc(int ID, int strp, int endp);			
-void Intlz_node(int nod);						
-bool Check_gap(int i, int strt, int endp);				
+void Popl_nodes();							//Populates the MDD node vector
+void Intlz_DFS(int ID, Node* fnod, Node* tnod);				//Initializes the DFS pattern queue with every possible sized one pattern that can be extended
+void Add_arc(int ID, int strp, int endp);				//Adds an arc to the MDD database
+void Intlz_node(int nod);						//Constructs an empty node
+bool Check_gap(int i, int strt, int endp);				//Checks satisfaction of gap constraints
 
-vector<Node*> datab_MDD;					
-vector<Pattern*> DFS_queue;						
+vector<Node*> datab_MDD;						//MDD database is essentially a vector of nodes
+vector<Pattern*> DFS_queue;						//DFS queue of patterns to extend in mining algorithm
 
 void Build_MDD() {
 
@@ -30,15 +35,15 @@ void Build_MDD() {
 }
 
 
-void Popl_nodes() {							
+void Popl_nodes() {							//this function decides to build an arc between two nodes pointed to by strp and endp. An arc is contructed if it does not violate any of the imposed constraints
 
-	bool antmon = 0;						
+	bool antmon = 0;						//antimonotone property of contraints
 	for (int i = 0; i < N; i++) {
-		int endp = items[i]->size();				
-		int strp = endp - 1;					
+		int endp = items[i]->size();				//endp initialized to last event in a sequence
+		int strp = endp - 1;					//strp initialized to one to last event in sequence
 		while (strp > 0) {
-			while (antmon == 0) {				
-				if (!ugap.empty() && ugapi[0] == 0 && attrs[0]->at(i)->at(endp - 1) - attrs[0]->at(i)->at(strp - 1) > ugap[0]) {		
+			while (antmon == 0) {				//while antimonotone property of contraints is violated backtrack on endp
+				if (!ugap.empty() && ugapi[0] == 0 && abs(attrs[0]->at(i)->at(endp - 1) - attrs[0]->at(i)->at(strp - 1)) > ugap[0]) {		//antimonotone contraints are upper gap
 					endp--;
 					if (strp == endp) {
 						strp--;
@@ -49,17 +54,17 @@ void Popl_nodes() {
 				else
 					antmon = 1;
 			}
-			if (antmon == 1) {				
+			if (antmon == 1) {				//while monotone property of constraints is staisfied add arc from strp to all nodes between strp and endp
 				int last_p = endp;
 				while (endp != strp) {
-					if (!lgap.empty() && lgapi[0] == 0 && attrs[0]->at(i)->at(endp - 1) - attrs[0]->at(i)->at(strp - 1) < lgap[0])
+					if (!lgap.empty() && lgapi[0] == 0 && abs(attrs[0]->at(i)->at(endp - 1) - attrs[0]->at(i)->at(strp - 1)) < lgap[0])
 						break;
 					if (tot_gap.empty() || (tot_gap[0] == 0 && tot_gap.size() == 1) || Check_gap(i ,strp, endp))
 						Add_arc(i, strp, endp);
 					endp--;
 				}
 				strp--;
-				if (!ugap.empty())			
+				if (!ugap.empty())			//need to recheck whther antimonotone property is satisfied
 					antmon = 0;
 				endp = last_p;
 			}
@@ -68,7 +73,7 @@ void Popl_nodes() {
 }
 
 
-bool Check_gap(int i, int strp, int endp){				
+bool Check_gap(int i, int strp, int endp){				//checks upper and lower gap constraints imposed on any attribute value
 
 	for (int att = 0; att < lgap.size(); att++){
 		if (lgap[att] == 0)
@@ -88,7 +93,7 @@ bool Check_gap(int i, int strp, int endp){
 }
 
 
-void Add_arc(int ID, int strp, int endp) {						
+void Add_arc(int ID, int strp, int endp) {						//Adds an arc from strp node to endp node
 
 	int fnod = items[ID]->at(strp - 1) + (strp - 1) * L;
 	int tnod = items[ID]->at(endp - 1) + (endp - 1) * L;
@@ -96,10 +101,10 @@ void Add_arc(int ID, int strp, int endp) {
 	Intlz_node(fnod - 1);
 	Intlz_node(tnod - 1);
 
-	datab_MDD[tnod - 1]->assign_ID(ID + 1, endp, NULL);				
+	datab_MDD[tnod - 1]->assign_ID(ID + 1, endp, NULL);				//stores in MDD node the required information for constraint satisfaction in mining algorithm
 	datab_MDD[fnod - 1]->assign_ID(ID + 1, strp, datab_MDD[tnod - 1]);
 
-	Intlz_DFS(ID, datab_MDD[fnod - 1], datab_MDD[tnod - 1]);			
+	Intlz_DFS(ID, datab_MDD[fnod - 1], datab_MDD[tnod - 1]);			//Adds pointer as starting point for mining algorithm
 }
 
 
@@ -111,8 +116,8 @@ void Intlz_node(int nod) {
 }
 
 
-void Intlz_DFS(int ID, Node* fnod, Node* tnod) {					
-											
+void Intlz_DFS(int ID, Node* fnod, Node* tnod) {					//adds a pattern (of size one) to DFS queue of mining algorithm. A pattern is added to queue only if it satisfies or can satisfy imposed constraints
+											//If a pattern is added, it is initialized with required information for constraint satisfaction during minign algorithm. All code in this fuction either checks satisfaction or stores information
 	if (fnod->parent != ID + 1){
 		int att_pos = 0;
 		for (vector<int>::iterator it = lspni.begin(); it != lspni.end(); it++){

@@ -1,10 +1,15 @@
 /*
 ---------------------------------------------------------------------------------------------------------------------------------- 
-Copyright 2019 Amin Hosseininasab
-This file is part of MPP mining algorithm.
-MPP is a free software, and a GNU General Public License is pending.
+Constraint-based Sequential Pattern Mining with Decision Diagrams
+Copyright (C) 2020 Carnegie Mellon University
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied 
+warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 ----------------------------------------------------------------------------------------------------------------------------------
 */
+
+//Node function populates node with required information for constraint satisfaction. Types of information and their generation are explained in AAAI paper and not discussed here.
 
 #include <iostream>
 #include "node_mdd.hpp"
