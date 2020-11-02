@@ -102,7 +102,7 @@ bool Load_items(string &inst) {
 bool Load_att(string &inst) {
 
 	max_attrs.push_back(0);
-	min_attrs.push_back(10^6);
+	min_attrs.push_back(1000000);
 
 	if (inst=="Position"){							//If no time attribute is defined and only position of events is required use Position as name of attribute. (stores position of each event as attribute value)
 		cout<< "Using position as time attribute\n";
