@@ -15,7 +15,7 @@ REFERENCE
     In Proceedings of the AAAI Conference on Artificial Intelligence (Vol. 33, pp. 1495-1502).
 
 CONTACT
-    aminh@andrew.cmu.edu
+    a.hosseininasab@ufl.edu
 
 INSTALLATION
     Designed for Linux systems. Installation from Makefile. Simply use make. Output is MPP executable.
